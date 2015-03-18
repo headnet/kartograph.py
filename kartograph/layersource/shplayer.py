@@ -138,12 +138,17 @@ class ShapefileLayer(LayerSource):
 def shape2geometry(shp, ignore_holes=False, min_area=False, bbox=False, proj=None):
     if shp is None:
         return None
+    if shp.shapeType == 0: # null shape
+        return None
     if bbox and shp.shapeType != 1:
-        if proj:
-            left, top = proj(shp.bbox[0], shp.bbox[1], inverse=True)
-            right, btm = proj(shp.bbox[2], shp.bbox[3], inverse=True)
-        else:
-            left, top, right, btm = shp.bbox
+        try:
+            if proj:
+                left, top = proj(shp.bbox[0], shp.bbox[1], inverse=True)
+                right, btm = proj(shp.bbox[2], shp.bbox[3], inverse=True)
+            else:
+                left, top, right, btm = shp.bbox
+        except AttributeError:
+            return None
         sbbox = BBox(left=left, top=top, width=right - left, height=btm - top)
         if not bbox.intersects(sbbox):
             # ignore the shape if it's not within the bbox
@@ -252,8 +257,8 @@ def shape2point(shp, proj=None):
         return MultiPoint(points)
     else:
         raise KartographError('shapefile import failed - no points found')
-    
-  
+
+
 def project_coords(pts, proj):
     for i in range(len(pts)):
         x, y = proj(pts[i][0], pts[i][1], inverse=True)
